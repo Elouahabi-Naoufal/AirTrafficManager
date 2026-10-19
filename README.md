@@ -1,278 +1,249 @@
-# AIR TRAFFIC MANAGER - COMPLETE SYSTEM
+<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+<a id="readme-top"></a>
 
-## ✅ **BOTH PARTS FULLY IMPLEMENTED**
+<!-- PROJECT SHIELDS -->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
-This is a complete implementation of the Air Traffic Manager project with:
-- **Part 1**: Runway Management with Semaphores & Priority Queues
-- **Part 2**: Flight Operations with Streams & Lambdas
-- **Full Integration**: Both parts working together seamlessly
-- **JavaFX GUI**: Interactive interface for all scenarios
-- **MongoDB**: Complete database integration
+<!-- PROJECT TITLE -->
+<br />
+<div align="center">
+  <h3 align="center">Air Traffic Manager</h3>
 
----
+  <p align="center">
+    A concurrent air-traffic simulation for one airport: aircraft approach, burn fuel, declare
+    emergencies, and compete for four runways while a MongoDB-backed control room tracks every
+    change.
+    <br />
+    <a href="https://github.com/Elouahabi-Naoufal/AirTrafficManager"><strong>Explore the repository »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/Elouahabi-Naoufal/AirTrafficManager/issues">Report Bug</a>
+    &middot;
+    <a href="https://github.com/Elouahabi-Naoufal/AirTrafficManager/issues">Request Feature</a>
+  </p>
+</div>
 
-## 🎯 **PROJECT REQUIREMENTS MET**
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
-### **Part 1 - Runway Management (COMPLETE)**
-✅ **Semaphore**: Controls 2 runways (max 2 concurrent landings)
-✅ **PriorityBlockingQueue**: Priority-based landing queue
-✅ **ExecutorService**: 3 landing worker threads
-✅ **Emergency Handling**: Priority escalation for emergencies
-✅ **Thread Safety**: ConcurrentHashMap, AtomicInteger
-✅ **NO synchronized keyword**
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
-### **Part 2 - Flight Operations (COMPLETE)**
-✅ **Streams & Lambdas**: 15+ stream operations throughout
-✅ **Weather Service**: Real-time weather monitoring with streams
-✅ **Fuel Monitoring**: Background thread checking fuel levels
-✅ **Flight Scheduler**: Multi-threaded flight processing
-✅ **Notification System**: Async notifications with CompletableFuture
-✅ **NO synchronized keyword**
+Air Traffic Manager is a desktop simulation of airport operations written in Java. Aircraft are
+generated with realistic callsigns, types, fuel loads and distances, then updated in the background
+while separate workers monitor fuel, manage runways, react to emergencies and produce weather
+events. The GUI is a database-driven control room: it polls MongoDB and renders active aircraft,
+runway state, a system log and live statistics.
 
-### **Integration (COMPLETE)**
-✅ **Shared Database**: MongoDB with 7 collections
-✅ **Event System**: Cross-part communication
-✅ **Emergency Escalation**: Part 2 → Part 1 integration
-✅ **Unified GUI**: Single interface for both parts
-✅ **Coordinated Shutdown**: Graceful cleanup
+The concurrency model is built from plain threads and a `ThreadPoolExecutor`. At startup
+`AirTrafficSystem` creates eight worker threads:
 
----
+* **1 aircraft-update worker** — advances every aircraft's position and fuel state.
+* **1 fuel-monitoring worker** — escalates low and critical fuel situations.
+* **4 runway-manager workers** — arbitrate the four runways (`RWY-09L`, `RWY-09R`, `RWY-27L`,
+  `RWY-27R`).
+* **1 emergency-handler worker** — processes declared emergencies.
+* **1 weather worker** — injects weather events that affect in-flight aircraft.
 
-## 🏗️ **COMPLETE ARCHITECTURE**
+A few implementation details worth knowing before reading the code:
 
-```
-AirTrafficManager/
-├── Part 1 (Runway Management)
-│   ├── Models: Aircraft, Runway, LandingRequest
-│   ├── Managers: RunwayManager (Semaphore), ResourceManager
-│   ├── Controllers: LandingController, EmergencyController
-│   ├── Threads: LandingWorker, EmergencyWorker, RunwayMonitor
-│   └── DAO: AircraftDAO, RunwayEventDAO
-│
-├── Part 2 (Flight Operations)
-│   ├── Models: Flight (with streams), WeatherAlert, FuelAlert
-│   ├── Services: WeatherService, FuelMonitoringService, NotificationService
-│   ├── Controllers: FlightScheduler, WeatherController
-│   ├── Threads: WeatherMonitor, FuelMonitor, FlightWorker
-│   └── DAO: FlightDAO, WeatherAlertDAO
-│
-├── Shared Components
-│   ├── DatabaseManager: MongoDB connection
-│   ├── Event: System event logging
-│   └── AirTrafficSystem: Main integration point
-│
-└── GUI
-    └── AirTrafficGUI: JavaFX interface for both parts
-```
+* The simulation is **database-centric**. Workers read and write the `airTrafficControl` database;
+  the Swing UI does not hold the authoritative state.
+* Despite the JavaFX dependencies in `pom.xml`, the current window class
+  (`com.atc.gui.AirTrafficControlGUI`) is a **Swing** `JFrame`. JavaFX is not used by the running UI.
+* The Maven build targets **Java 25** (`maven.compiler.source`/`target`). Build with a JDK 25
+  toolchain.
+* MongoDB is opened at `mongodb://localhost:27017`; if it is unavailable the code logs the failure
+  and the database-backed views stay empty rather than crashing the process.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## 🧵 **THREADING ARCHITECTURE**
+### Built With
 
-### **Part 1 Threads:**
-- **3 LandingWorker threads**: Process landing queue
-- **2 EmergencyWorker threads**: Handle emergencies
-- **1 RunwayMonitor thread**: Monitor runway status (15s intervals)
+* [![Java][java-shield]][java-url]
+* [![Maven][maven-shield]][maven-url]
+* [![MongoDB][mongodb-shield]][mongodb-url]
+* [![JavaFX][javafx-shield]][javafx-url] — declared dependencies; the active GUI is Swing
 
-### **Part 2 Threads:**
-- **5 FlightWorker threads**: Process flight operations
-- **2 WeatherProcessor threads**: Handle weather updates
-- **3 Notification threads**: Async notifications
-- **1 WeatherMonitor thread**: Generate weather events (30s intervals)
-- **1 FuelMonitor thread**: Check fuel levels (10s intervals)
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### **Concurrency Tools Used:**
-- **Semaphore(2)**: Runway access control
-- **PriorityBlockingQueue**: Landing priority queue
-- **BlockingQueue**: Flight processing queue
-- **ConcurrentHashMap**: Thread-safe data storage
-- **AtomicInteger**: Thread-safe counters
-- **ExecutorService**: Thread pool management
-- **ScheduledExecutorService**: Periodic tasks
-- **CompletableFuture**: Async operations
+<!-- GETTING STARTED -->
+## Getting Started
 
-**✅ NO synchronized keyword used anywhere!**
+### Prerequisites
 
----
+* JDK 25
+  ```sh
+  java -version
+  ```
+* Maven 3.9+
+  ```sh
+  mvn -version
+  ```
+* A MongoDB server on `localhost:27017` (MongoDB 4.4+ is sufficient)
+  ```sh
+  mongod --version
+  ```
 
-## 🌊 **STREAMS & LAMBDAS SHOWCASE**
+### Installation
 
-### **Flight Model:**
-```java
-// Static predicates
-public static final Predicate<Flight> IS_DELAYED = flight -> flight.delayMinutes > 0;
-public static final Predicate<Flight> IS_WEATHER_AFFECTED = flight -> flight.isAffectedByWeather;
+1. Clone the repository
+   ```sh
+   git clone https://github.com/Elouahabi-Naoufal/AirTrafficManager.git
+   cd AirTrafficManager
+   ```
+2. Start MongoDB locally.
+3. Optionally create the collections and indexes used by the project
+   ```sh
+   mongosh setup_mongodb.js
+   ```
+   The application also creates its runtime collections on demand.
+4. Compile
+   ```sh
+   mvn clean compile
+   ```
 
-// Stream operations
-public static List<Flight> filterDelayed(List<Flight> flights) {
-    return flights.stream().filter(IS_DELAYED).collect(Collectors.toList());
-}
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-public static Map<String, List<Flight>> groupByStatus(List<Flight> flights) {
-    return flights.stream().collect(Collectors.groupingBy(Flight::getStatus));
-}
-```
+<!-- USAGE -->
+## Usage
 
-### **WeatherService:**
-```java
-public List<Flight> getAffectedFlights(WeatherAlert alert) {
-    return flightDAO.findAllFlights().stream()
-        .filter(flight -> flight.getOrigin().equals(alert.getAffectedAirport()) ||
-                         flight.getDestination().equals(alert.getAffectedAirport()))
-        .filter(flight -> !"LANDED".equals(flight.getStatus()))
-        .collect(Collectors.toList());
-}
-```
+Launch the application through the configured JavaFX Maven plugin entry point:
 
-### **FuelMonitoringService:**
-```java
-public Map<String, Long> getFuelStatisticsByStatus() {
-    return aircraftFuelLevels.entrySet().stream()
-        .collect(Collectors.groupingBy(
-            entry -> entry.getValue() <= 10 ? "CRITICAL" :
-                    entry.getValue() <= 20 ? "LOW" : "NORMAL",
-            Collectors.counting()));
-}
-```
-
----
-
-## 🎮 **GUI FEATURES**
-
-### **Interactive Buttons:**
-1. **Schedule Flight** - Creates random flight (Part 2)
-2. **Create Weather Alert** - Generates weather event affecting flights (Part 2)
-3. **Simulate Low Fuel** - Triggers fuel monitoring (Part 2)
-4. **Request Landing** - Creates aircraft requesting landing (Part 1)
-5. **Declare Emergency** - Escalates to emergency landing (Part 1 + Part 2)
-6. **Show Statistics** - Displays system statistics
-
-### **Real-time Tables:**
-- **Flights Table**: Shows all active flights with delays
-- **Aircraft Table**: Shows aircraft with fuel levels and runway assignments
-- **System Log**: Timestamped events with auto-scroll
-
-### **Live Statistics:**
-- Total flights and aircraft
-- On-time percentage
-- Average delays
-- Active weather alerts
-- Available runways
-
----
-
-## 🗄️ **MONGODB INTEGRATION**
-
-### **Database:** `airTrafficManager`
-
-### **Collections:**
-1. **aircraft** - Aircraft data with fuel levels
-2. **runways** - Runway status and assignments
-3. **flights** - Flight schedules and delays
-4. **landing_events** - Landing operations log
-5. **weather_alerts** - Active weather conditions
-6. **fuel_alerts** - Fuel monitoring alerts
-7. **system_events** - System activity log
-
-### **Operations:**
-- Full CRUD for all entities
-- Complex queries with filters
-- Real-time updates
-- Event logging
-
----
-
-## 🚀 **HOW TO RUN**
-
-### **Prerequisites:**
-1. MongoDB running on `localhost:27017`
-2. Run `Docs/setup_database.js` to create database
-3. Java 21+ with JavaFX
-
-### **Execution:**
-```bash
-# Compile
-mvn clean compile
-
-# Run complete system
-mvn exec:java -Dexec.mainClass="com.atc.AirTrafficSystem"
-
-# Or run GUI directly
-mvn exec:java -Dexec.mainClass="com.atc.gui.AirTrafficGUI"
+```sh
+mvn javafx:run
 ```
 
----
+The control room opens with four runways, three generated flights and the eight background workers
+already running. From the window you can:
 
-## 🧪 **TESTING SCENARIOS**
+* **Generate Aircraft** — insert a new flight with a random airline, aircraft type, fuel load,
+  origin, destination and priority.
+* **Add Runway** — register another runway in the database.
+* **Fire / Medical / Security / Fuel Critical / Weather Storm / Fuel Low** — trigger an emergency
+  scenario with a matching priority.
+* **Clear Log** — clear the on-screen event log.
 
-### **Part 1 Scenarios:**
-1. **Multiple Landing Requests**: Click "Request Landing" multiple times
-2. **Emergency Landing**: Click "Declare Emergency" to test priority
-3. **Runway Saturation**: Request 5+ landings to test semaphore
-4. **Concurrent Operations**: Test thread safety with rapid clicks
+The MongoDB database is `airTrafficControl`, with collections including `active_aircraft`,
+`runways`, `airports`, `aircraft_types`, `runway_events`, `emergency_events` and `weather_events`.
+The schema and project specification are in [`Docs/`](https://github.com/Elouahabi-Naoufal/AirTrafficManager/tree/main/Docs).
 
-### **Part 2 Scenarios:**
-1. **Weather Impact**: Create weather alerts and see flight delays
-2. **Fuel Monitoring**: Simulate low fuel and watch escalation
-3. **Flight Scheduling**: Schedule multiple flights
-4. **Statistics**: View real-time analytics with streams
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### **Integration Scenarios:**
-1. **Emergency Escalation**: Low fuel triggers emergency landing
-2. **Weather + Landing**: Weather affects landing operations
-3. **Full System Load**: All operations running simultaneously
+<!-- ROADMAP -->
+## Roadmap
 
----
+- [x] Four-runway airport with database-backed runway state
+- [x] Background workers for aircraft updates, fuel, runways, emergencies and weather
+- [x] Swing control room with live tables and statistics
+- [x] MongoDB persistence for runtime events
+- [ ] Replace the Swing window with a real JavaFX UI, or remove the unused JavaFX dependencies
+- [ ] Add an automated test suite (`src/test/java` currently contains only a `.gitkeep`)
+- [ ] Extract the hard-coded simulation values in `SimulationConfig` into a configuration file
+- [ ] Add graceful handling for a MongoDB outage in every worker, not only at startup
 
-## 📊 **KEY METRICS**
+See the [open issues](https://github.com/Elouahabi-Naoufal/AirTrafficManager/issues) for a full list of proposed features and known issues.
 
-### **Code Statistics:**
-- **Part 1**: 12 classes, Semaphore + PriorityQueue
-- **Part 2**: 15 classes, 15+ stream operations
-- **Total Threads**: 18+ concurrent threads
-- **0 synchronized keywords**
-- **7 MongoDB collections**
-- **Full JavaFX GUI**
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### **Concurrency Features:**
-- Semaphore for runway control
-- Priority queues for emergency handling
-- Blocking queues for producer-consumer
-- Concurrent collections throughout
-- Atomic variables for counters
-- Thread pools for workers
-- Scheduled executors for monitoring
+<!-- CONTRIBUTING -->
+## Contributing
 
-### **Streams & Lambdas:**
-- Filtering operations
-- Mapping and transformations
-- Grouping and collecting
-- Statistical calculations
-- Parallel streams
-- Method references
-- Predicate composition
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
----
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
 
-## ✨ **HIGHLIGHTS**
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### **Technical Excellence:**
-✅ Complete implementation of both parts
-✅ Full integration between parts
-✅ Extensive use of streams/lambdas
-✅ Proper concurrent programming without synchronized
-✅ Real-time GUI with live updates
-✅ Comprehensive MongoDB integration
-✅ Professional error handling
-✅ Graceful shutdown
+### Top contributors:
 
-### **Functional Completeness:**
-✅ All Part 1 requirements met
-✅ All Part 2 requirements met
-✅ Integration requirements met
-✅ Interactive GUI for all scenarios
-✅ Real-time monitoring and statistics
-✅ Database persistence
-✅ Event logging
+<a href="https://github.com/Elouahabi-Naoufal/AirTrafficManager/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Elouahabi-Naoufal/AirTrafficManager" alt="contrib.rocks image" />
+</a>
 
-**🎉 COMPLETE SYSTEM READY FOR DEMONSTRATION! 🎉**
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- LICENSE -->
+## License
+
+No `LICENSE` file is bundled with this repository. This project is not licensed — all rights reserved.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CONTACT -->
+## Contact
+
+Naoufal Elouahabi
+* LinkedIn: [https://www.linkedin.com/in/elouahabi-naoufal/](https://www.linkedin.com/in/elouahabi-naoufal/)
+* Email: [elouahabi-naoufal1@gmail.com](mailto:elouahabi-naoufal1@gmail.com)
+
+Project Link: [https://github.com/Elouahabi-Naoufal/AirTrafficManager](https://github.com/Elouahabi-Naoufal/AirTrafficManager)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+* [MongoDB Java Driver](https://www.mongodb.com/docs/drivers/java/sync/current/)
+* [OpenJFX](https://openjfx.io/)
+* [Apache Maven](https://maven.apache.org/)
+* [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+* [Img Shields](https://shields.io)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/Elouahabi-Naoufal/AirTrafficManager.svg?style=for-the-badge
+[contributors-url]: https://github.com/Elouahabi-Naoufal/AirTrafficManager/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/Elouahabi-Naoufal/AirTrafficManager.svg?style=for-the-badge
+[forks-url]: https://github.com/Elouahabi-Naoufal/AirTrafficManager/network/members
+[stars-shield]: https://img.shields.io/github/stars/Elouahabi-Naoufal/AirTrafficManager.svg?style=for-the-badge
+[stars-url]: https://github.com/Elouahabi-Naoufal/AirTrafficManager/stargazers
+[issues-shield]: https://img.shields.io/github/issues/Elouahabi-Naoufal/AirTrafficManager.svg?style=for-the-badge
+[issues-url]: https://github.com/Elouahabi-Naoufal/AirTrafficManager/issues
+[license-shield]: https://img.shields.io/badge/License-All%20rights%20reserved-red.svg?style=for-the-badge
+[license-url]: https://github.com/Elouahabi-Naoufal/AirTrafficManager
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/elouahabi-naoufal/
+[java-shield]: https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white
+[java-url]: https://openjdk.org/
+[maven-shield]: https://img.shields.io/badge/Apache%20Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white
+[maven-url]: https://maven.apache.org/
+[mongodb-shield]: https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white
+[mongodb-url]: https://www.mongodb.com/
+[javafx-shield]: https://img.shields.io/badge/JavaFX-FF711E?style=for-the-badge&logo=openjfx&logoColor=white
+[javafx-url]: https://openjfx.io/
